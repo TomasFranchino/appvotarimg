@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Vercel → Storage → Neon (Postgres) crea DATABASE_URL y DATABASE_URL_UNPOOLED automáticamente.
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+/// Un trabajo = un alumno con su par de imágenes.
+model Work {
+  id             String     @id @default(cuid())
+  studentName    String
+  expectationUrl String
+  realityUrl     String
+  createdAt      DateTime   @default(now())
+  voteItems      VoteItem[]
+}
+
+/// Un voto completo (boleta) emitido por un navegador.
+model Ballot {
+  id          String     @id @default(cuid())
+  fingerprint String     @unique
+  nickname    String?
+  createdAt   DateTime   @default(now())
+  items       VoteItem[]
+}
+
+/// Cada boleta tiene exactamente 3 ítems: 3, 2 y 1 punto a trabajos distintos.
+model VoteItem {
+  id       String @id @default(cuid())
+  ballotId String
+  workId   String
+  points   Int
+  ballot   Ballot @relation(fields: [ballotId], references: [id], onDelete: Cascade)
+  work     Work   @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@unique([ballotId, workId])
+  @@unique([ballotId, points])
+  @@index([workId])
+}
+
+/// Fila única (id = 1) con la configuración de la votación.
+model Settings {
+  id          Int     @id @default(1)
+  votingOpen  Boolean @default(true)
+  showResults Boolean @default(true)
+}
