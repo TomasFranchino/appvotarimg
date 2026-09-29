@@ -1,3 +1,9 @@
+export type CourseDTO = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
 export type WorkDTO = {
   id: string;
   studentName: string;

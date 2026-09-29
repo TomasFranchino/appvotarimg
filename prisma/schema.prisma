@@ -9,23 +9,44 @@ datasource db {
   directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
+/// Un curso tiene su propia galería, votación y ranking (link público: /c/<slug>).
+model Course {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  votingOpen  Boolean  @default(true)
+  showResults Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  works       Work[]
+  ballots     Ballot[]
+}
+
 /// Un trabajo = un alumno con su par de imágenes.
 model Work {
   id             String     @id @default(cuid())
+  courseId       String
   studentName    String
   expectationUrl String
   realityUrl     String
   createdAt      DateTime   @default(now())
+  course         Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
   voteItems      VoteItem[]
+
+  @@index([courseId])
 }
 
-/// Un voto completo (boleta) emitido por un navegador.
+/// Un voto completo (boleta) emitido por un navegador en un curso.
 model Ballot {
   id          String     @id @default(cuid())
-  fingerprint String     @unique
+  courseId    String
+  fingerprint String
   nickname    String?
   createdAt   DateTime   @default(now())
+  course      Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
   items       VoteItem[]
+
+  // Un mismo dispositivo vota una vez por curso.
+  @@unique([courseId, fingerprint])
 }
 
 /// Cada boleta tiene exactamente 3 ítems: 3, 2 y 1 punto a trabajos distintos.
@@ -40,11 +61,4 @@ model VoteItem {
   @@unique([ballotId, workId])
   @@unique([ballotId, points])
   @@index([workId])
-}
-
-/// Fila única (id = 1) con la configuración de la votación.
-model Settings {
-  id          Int     @id @default(1)
-  votingOpen  Boolean @default(true)
-  showResults Boolean @default(true)
 }

@@ -7,23 +7,23 @@ import { Button } from "@/components/ui/button";
 import { WorkPair, WorkThumbs } from "@/components/work-pair";
 import { PLACES } from "@/lib/places";
 import { cn } from "@/lib/utils";
-import type { ResultRow, ResultsPayload } from "@/lib/types";
+import type { CourseDTO, ResultRow, ResultsPayload } from "@/lib/types";
 
 const POLL_MS = 5000;
 
-export function ResultsBoard({ initial }: { initial: ResultsPayload }) {
+export function ResultsBoard({ course, initial }: { course: CourseDTO; initial: ResultsPayload }) {
   const [data, setData] = useState(initial);
   const [loading, setLoading] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/results", { cache: "no-store" });
+      const res = await fetch(`/api/results?curso=${encodeURIComponent(course.slug)}`, { cache: "no-store" });
       if (res.ok) setData(await res.json());
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [course.slug]);
 
   // Actualización automática mientras la pestaña está visible.
   useEffect(() => {
@@ -45,6 +45,7 @@ export function ResultsBoard({ initial }: { initial: ResultsPayload }) {
             <Trophy className="size-8 text-gold" /> Resultados
           </h1>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <Badge>{course.name}</Badge>
             <Badge variant="accent">
               <Users /> {data.totalVotes} {data.totalVotes === 1 ? "voto" : "votos"}
             </Badge>

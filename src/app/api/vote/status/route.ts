@@ -1,25 +1,30 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { findBallot } from "@/lib/ballot";
-import { getSettings, getTotalVotes } from "@/lib/queries";
+import { getCourseBySlug, getTotalVotes } from "@/lib/queries";
 import type { VoteStatus } from "@/lib/types";
 
-const bodySchema = z.object({ fingerprint: z.string().trim().max(200).nullish() });
+const bodySchema = z.object({
+  courseSlug: z.string().trim().min(1).max(40),
+  fingerprint: z.string().trim().max(200).nullish(),
+});
 
 /** POST para no poner el fingerprint en la URL. */
 export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(await request.json().catch(() => ({})));
-  const fingerprint = parsed.success ? parsed.data.fingerprint || null : null;
+  if (!parsed.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
 
-  const [ballot, settings, totalVotes] = await Promise.all([
-    findBallot(fingerprint),
-    getSettings(),
-    getTotalVotes(),
+  const course = await getCourseBySlug(parsed.data.courseSlug);
+  if (!course) return NextResponse.json({ error: "El curso no existe." }, { status: 404 });
+
+  const [ballot, totalVotes] = await Promise.all([
+    findBallot(course.id, parsed.data.fingerprint || null),
+    getTotalVotes(course.id),
   ]);
 
   const status: VoteStatus = {
     hasVoted: Boolean(ballot),
-    votingOpen: settings.votingOpen,
+    votingOpen: course.votingOpen,
     totalVotes,
     picks: ballot?.items.map((item) => ({ points: item.points, studentName: item.work.studentName })) ?? [],
   };

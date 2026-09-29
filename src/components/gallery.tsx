@@ -14,9 +14,10 @@ import { getFingerprint } from "@/lib/fingerprint";
 import { PLACES } from "@/lib/places";
 import { NICKNAME_ASKED_KEY, storage } from "@/lib/storage";
 import { cn } from "@/lib/utils";
-import type { VoteStatus, WorkDTO } from "@/lib/types";
+import type { CourseDTO, VoteStatus, WorkDTO } from "@/lib/types";
 
 type Props = {
+  course: CourseDTO;
   works: WorkDTO[];
   totalVotes: number;
   votingOpen: boolean;
@@ -24,7 +25,7 @@ type Props = {
 
 type Phase = "loading" | "can-vote" | "voted" | "closed";
 
-export function Gallery({ works, totalVotes: initialTotal, votingOpen }: Props) {
+export function Gallery({ course, works, totalVotes: initialTotal, votingOpen }: Props) {
   const [phase, setPhase] = useState<Phase>("loading");
   const [totalVotes, setTotalVotes] = useState(initialTotal);
   const [picks, setPicks] = useState<Picks>([null, null, null]);
@@ -40,7 +41,7 @@ export function Gallery({ works, totalVotes: initialTotal, votingOpen }: Props) 
       const res = await fetch("/api/vote/status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fingerprint }),
+        body: JSON.stringify({ courseSlug: course.slug, fingerprint }),
       }).catch(() => null);
       if (cancelled) return;
       if (!res?.ok) {
@@ -56,7 +57,7 @@ export function Gallery({ works, totalVotes: initialTotal, votingOpen }: Props) 
     return () => {
       cancelled = true;
     };
-  }, [votingOpen, works.length]);
+  }, [course.slug, votingOpen, works.length]);
 
   function voteFor(work: WorkDTO) {
     setViewing(null);
@@ -74,6 +75,7 @@ export function Gallery({ works, totalVotes: initialTotal, votingOpen }: Props) 
     <>
       <section className="mx-auto max-w-6xl px-4 pt-6 pb-4 sm:pt-10">
         <div className="flex flex-wrap items-center gap-2">
+          <Badge>{course.name}</Badge>
           <Badge variant="accent">
             <Users /> {totalVotes} {totalVotes === 1 ? "voto" : "votos"}
           </Badge>
@@ -87,7 +89,7 @@ export function Gallery({ works, totalVotes: initialTotal, votingOpen }: Props) 
           Mirá todos los trabajos y elegí tus 3 favoritos: el 1º suma <strong>3 puntos</strong>, el 2º{" "}
           <strong>2</strong> y el 3º <strong>1</strong>. Tocá una imagen para verla más grande.
         </p>
-        <StatusBanner phase={phase} enoughWorks={enoughWorks} />
+        <StatusBanner phase={phase} enoughWorks={enoughWorks} courseSlug={course.slug} />
       </section>
 
       <section className="mx-auto max-w-6xl px-4 pb-32">
@@ -163,14 +165,14 @@ export function Gallery({ works, totalVotes: initialTotal, votingOpen }: Props) 
         </div>
       )}
 
-      <VoteDialog works={works} picks={picks} onPicksChange={setPicks} open={voteOpen} onOpenChange={setVoteOpen} />
+      <VoteDialog courseSlug={course.slug} works={works} picks={picks} onPicksChange={setPicks} open={voteOpen} onOpenChange={setVoteOpen} />
       <WorkViewer work={viewing} onClose={() => setViewing(null)} onVote={canVote ? voteFor : undefined} />
       <NicknameDialog open={askName} onOpenChange={setAskName} />
     </>
   );
 }
 
-function StatusBanner({ phase, enoughWorks }: { phase: Phase; enoughWorks: boolean }) {
+function StatusBanner({ phase, enoughWorks, courseSlug }: { phase: Phase; enoughWorks: boolean; courseSlug: string }) {
   if (phase === "voted") {
     return (
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900">
@@ -179,10 +181,10 @@ function StatusBanner({ phase, enoughWorks }: { phase: Phase; enoughWorks: boole
         </p>
         <div className="flex gap-2">
           <Button asChild size="sm" variant="outline" className="bg-white">
-            <Link href="/ya-votaste">Ver mi voto</Link>
+            <Link href={`/c/${courseSlug}/ya-votaste`}>Ver mi voto</Link>
           </Button>
           <Button asChild size="sm">
-            <Link href="/resultados">Resultados</Link>
+            <Link href={`/c/${courseSlug}/resultados`}>Resultados</Link>
           </Button>
         </div>
       </div>

@@ -9,20 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { resizeImage } from "@/lib/resize-image";
+import { slugify } from "@/lib/slug";
 import { cn } from "@/lib/utils";
 
-function slugify(text: string) {
-  return (
-    text
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "") || "alumno"
-  );
-}
-
-export function UploadForm() {
+export function UploadForm({ courseId, courseSlug }: { courseId: string; courseSlug: string }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [expectation, setExpectation] = useState<File | null>(null);
@@ -39,18 +29,18 @@ export function UploadForm() {
       const [exp, real] = await Promise.all([resizeImage(expectation), resizeImage(reality)]);
 
       setStep("Subiendo fotos…");
-      const slug = slugify(name);
+      const slug = slugify(name) || "alumno";
       const opts = { access: "public" as const, handleUploadUrl: "/api/admin/upload" };
       const [expBlob, realBlob] = await Promise.all([
-        upload(`trabajos/${slug}-expectativa.${exp.name.split(".").pop()}`, exp, opts),
-        upload(`trabajos/${slug}-realidad.${real.name.split(".").pop()}`, real, opts),
+        upload(`trabajos/${courseSlug}/${slug}-expectativa.${exp.name.split(".").pop()}`, exp, opts),
+        upload(`trabajos/${courseSlug}/${slug}-realidad.${real.name.split(".").pop()}`, real, opts),
       ]);
 
       setStep("Guardando…");
       const res = await fetch("/api/admin/works", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ studentName: name.trim(), expectationUrl: expBlob.url, realityUrl: realBlob.url }),
+        body: JSON.stringify({ courseId, studentName: name.trim(), expectationUrl: expBlob.url, realityUrl: realBlob.url }),
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };

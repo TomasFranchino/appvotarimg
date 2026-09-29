@@ -1,22 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { Images, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const links = [
-  { href: "/", label: "Galería", icon: Images },
-  { href: "/resultados", label: "Resultados", icon: Trophy },
-];
-
 export function SiteHeader() {
   const pathname = usePathname();
+  const { slug } = useParams<{ slug?: string }>();
+  const base = slug ? `/c/${slug}` : null;
+
+  // La navegación solo tiene sentido dentro de un curso.
+  const links = base
+    ? [
+        { href: base, label: "Galería", icon: Images },
+        { href: `${base}/resultados`, label: "Resultados", icon: Trophy },
+      ]
+    : [];
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4">
-        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
+        <Link href={base ?? "/"} className="flex items-center gap-2 font-semibold tracking-tight">
           <span className="flex">
             <span className="size-5 rounded-md bg-expectation" />
             <span className="-ml-2 size-5 rounded-md bg-reality mix-blend-multiply" />

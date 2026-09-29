@@ -18,6 +18,7 @@ import type { WorkDTO } from "@/lib/types";
 export type Picks = [string | null, string | null, string | null];
 
 type Props = {
+  courseSlug: string;
   works: WorkDTO[];
   picks: Picks;
   onPicksChange: (picks: Picks) => void;
@@ -39,7 +40,7 @@ export function togglePick(picks: Picks, workId: string): Picks | "full" {
   return next;
 }
 
-export function VoteDialog({ works, picks, onPicksChange, open, onOpenChange }: Props) {
+export function VoteDialog({ courseSlug, works, picks, onPicksChange, open, onOpenChange }: Props) {
   const router = useRouter();
   const [nickname, setNickname] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -76,12 +77,12 @@ export function VoteDialog({ works, picks, onPicksChange, open, onOpenChange }: 
       const res = await fetch("/api/vote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fingerprint, nickname: name || null, picks }),
+        body: JSON.stringify({ courseSlug, fingerprint, nickname: name || null, picks }),
       });
 
       if (res.ok || res.status === 409) {
         if (res.ok) toast.success("¡Voto registrado!");
-        router.push("/ya-votaste");
+        router.push(`/c/${courseSlug}/ya-votaste`);
         router.refresh();
         return;
       }

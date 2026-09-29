@@ -9,7 +9,7 @@ import { placeForPoints } from "@/lib/places";
 import { cn } from "@/lib/utils";
 import type { VoteStatus } from "@/lib/types";
 
-export function VotedView() {
+export function VotedView({ courseSlug }: { courseSlug: string }) {
   const [status, setStatus] = useState<VoteStatus | null>(null);
 
   useEffect(() => {
@@ -18,11 +18,11 @@ export function VotedView() {
       const res = await fetch("/api/vote/status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fingerprint }),
+        body: JSON.stringify({ courseSlug, fingerprint }),
       });
       setStatus(await res.json());
     })().catch(() => setStatus({ hasVoted: false, votingOpen: true, totalVotes: 0, picks: [] }));
-  }, []);
+  }, [courseSlug]);
 
   if (!status) {
     return (
@@ -39,7 +39,7 @@ export function VotedView() {
         <h1 className="text-2xl font-bold">Todavía no votaste</h1>
         <p className="text-muted-foreground">Andá a la galería y elegí tus 3 trabajos favoritos.</p>
         <Button asChild size="lg">
-          <Link href="/">Ir a votar</Link>
+          <Link href={`/c/${courseSlug}`}>Ir a votar</Link>
         </Button>
       </div>
     );
@@ -77,10 +77,10 @@ export function VotedView() {
 
       <div className="flex w-full flex-col gap-2 sm:flex-row">
         <Button asChild size="lg" className="flex-1">
-          <Link href="/resultados">Ver resultados</Link>
+          <Link href={`/c/${courseSlug}/resultados`}>Ver resultados</Link>
         </Button>
         <Button asChild size="lg" variant="outline" className="flex-1">
-          <Link href="/">Volver a la galería</Link>
+          <Link href={`/c/${courseSlug}`}>Volver a la galería</Link>
         </Button>
       </div>
     </div>
